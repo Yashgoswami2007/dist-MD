@@ -7,6 +7,48 @@ from app.core.database import mongodb
 from app.db.models import ConversationDocument, MessageDocument
 from app.services.sheets import sheets_service
 
+logger = logging.getLogger(__name__)
+
+class ConversationService:
+
+    @staticmethod
+    async def create_conversation(
+        conversation_id: str,
+        user_id: Optional[str] = None
+    ) -> ConversationDocument:
+        """
+        Create a new conversation.
+        
+        Args:
+            conversation_id: Unique conversation identifier
+            user_id: Optional user identifier
+            
+        Returns:
+            Created conversation document
+        """
+        try:
+            db = mongodb.get_db()
+            collection = db.conversations
+            
+            conversation = ConversationDocument(
+                conversation_id=conversation_id,
+                user_id=user_id,
+                created_at=datetime.now(),
+                updated_at=datetime.now(),
+                messages=[],
+                summary="",
+                total_messages=0
+            )
+            
+            await collection.insert_one(conversation.model_dump())
+            logger.info(f"Created conversation {conversation_id} for user {user_id or 'anonymous'}")
+            
+            return conversation
+            
+        except Exception as e:
+            logger.error(f"Error creating conversation {conversation_id}: {e}")
+            raise
+
     @staticmethod
     async def save_message(
         conversation_id: str,
