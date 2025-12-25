@@ -13,16 +13,14 @@ router = APIRouter()
 
 
 from fastapi import Depends
-from app.api.v1.endpoints.auth import get_current_user
-from app.services.sheets import sheets_service
-import logging
+from app.api.v1.endpoints.auth import get_current_user_optional
 
 logger = logging.getLogger(__name__)
 
 @router.post("/text", response_model=MoodResponse)
 async def analyze_text(
     request: TextMoodRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: Optional[dict] = Depends(get_current_user_optional)
 ) -> MoodResponse:
     """
     Analyze mood from text only and return supportive response.
@@ -31,7 +29,7 @@ async def analyze_text(
     
     # Log mood stats
     try:
-        if response.mood:
+        if response.mood and current_user:
             await sheets_service.log_mood_stat(
                 user_id=current_user["user_id"],
                 mood_data={
@@ -53,7 +51,7 @@ async def analyze_multimodal(
     voice_audio: Optional[UploadFile] = File(default=None),
     conversation_id: Optional[str] = Form(default=None),
     admin_password: Optional[str] = Form(default=None),
-    current_user: dict = Depends(get_current_user)
+    current_user: Optional[dict] = Depends(get_current_user_optional)
 ) -> MultimodalMoodResponse:
     """
     Analyze mood from combination of text, face, and voice.
@@ -68,7 +66,7 @@ async def analyze_multimodal(
     
     # Log mood stats
     try:
-        if response.combined_mood:
+        if response.combined_mood and current_user:
              await sheets_service.log_mood_stat(
                 user_id=current_user["user_id"],
                 mood_data={

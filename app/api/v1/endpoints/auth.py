@@ -48,6 +48,18 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     return user
 
 
+async def get_current_user_optional(token: str = Depends(oauth2_scheme)) -> dict | None:
+    """Get current user if authenticated, else None."""
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        email: str = payload.get("email")
+        if email:
+            return await user_service.get_user_by_email(email)
+    except Exception:
+        pass
+    return None
+
+
 # Models
 class UserCreate(BaseModel):
     email: EmailStr
